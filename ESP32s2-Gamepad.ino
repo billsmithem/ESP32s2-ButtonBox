@@ -1,5 +1,5 @@
 #define DEBUG
-#define SLOWDOWN          // add delay so I can see button presses on jstest
+// #define SLOWDOWN          // add delay so I can see button presses on jstest
 #if defined(SLOWDOWN)
 const int delayMillis = 500;
 #endif
@@ -19,6 +19,8 @@ const int delayMillis = 500;
 #include <Keypad.h>
 #include "Adafruit_seesaw.h"      // rotaries
 #include <seesaw_neopixel.h>
+
+#include "types.h"          // get around weird arduino pre-processor
 
 const char* ssid = "CPRAD1";
 const char* password = "Elevated84wHite21worshiP";
@@ -85,6 +87,8 @@ seesaw_NeoPixel encoder_pixels[NUM_ENCODERS] = {
 int32_t encoder_positions[] = {0, 0, 0, 0, 0, 0};
 bool found_encoders[] = {false, false, false, false, false, false};
 
+bool ssSwitchState[] { true, true, true, true, true, true};
+
 // keypad
 const byte ROWS = 4;
 const byte COLS = 6;
@@ -105,22 +109,9 @@ Keypad keypad = Keypad(makeKeymap(bbkeys), rowPins, colPins, ROWS, COLS);
 myUSBHIDGamepad Gamepad;
 USBHIDKeyboard Keyboard;
 
-typedef struct {
-  char layout[100];
-} Config;
-
 Config prefs = {
   "default.layout"
 };
-
-typedef struct {
-  int buttonVal;
-  bool isChars;
-  char keys[20];
-  bool control;
-  bool shift;
-  bool alt;
-} Button;
 
 // default values for buttons
 // Button buttons[42];
@@ -133,6 +124,7 @@ Button buttons[] = {
   { 3, false, "", false, false, false },
   { 4, false, "", false, false, false },
   { 5, false, "", false, false, false },
+
   { 6, false, "", false, false, false },
   { 7, false, "", false, false, false },
   { 8, false, "", false, false, false },
@@ -181,36 +173,76 @@ Button buttons[] = {
 };
 
 
-void sendButton(unsigned int buttonIndex) {
+void sendButton(unsigned int buttonIndex, ButtonMode mode) {
   #if defined(DEBUG)
   Serial.print("sendButton: ");
   Serial.println(buttonIndex);
-  Serial.println("Pressing button");
+  switch (mode) {
+    case On:
+      Serial.println("Pressing button");
+      break;
+
+    case Off:
+      Serial.println("Releasing button");
+      break;
+
+    case Pulse:
+      Serial.println("Pulsing button");
+      break;
+  }
   #endif
   if (buttons[buttonIndex].isChars == false) {
-    Gamepad.pressButton(buttons[buttonIndex].buttonVal);
-    #if defined(SLOWDOWN)
-    delay(delayMillis);
-    #endif
-    Gamepad.releaseButton(buttons[buttonIndex].buttonVal);
+    switch (mode)
+    {
+      case On:
+        Gamepad.pressButton(buttons[buttonIndex].buttonVal);
+        #if defined(SLOWDOWN)
+        delay(delayMillis);
+        #endif
+        break;
+
+      case Off:
+        Gamepad.releaseButton(buttons[buttonIndex].buttonVal);
+        break;
+
+      case Pulse:
+        Gamepad.pressButton(buttons[buttonIndex].buttonVal);
+        delay(10);
+        Gamepad.releaseButton(buttons[buttonIndex].buttonVal);
+        break;
+    }
   }
   else {      // it's keys
-    Button button = buttons[buttonIndex];
-    // Keyboard.press(buttons[buttonIndex].keys);
-    if (button.control)
-      Keyboard.press(KEY_LEFT_CTRL);
-    if (button.shift)
-      Keyboard.press(KEY_LEFT_SHIFT);
-    if (button.alt)
-      Keyboard.press(KEY_LEFT_ALT);
-    for (int index = 0; index < sizeof(Button().keys); index++ ){
-      Keyboard.press(button.keys[index]);
-      delay(10);
-      Keyboard.release(button.keys[index]);
-      delay(10);
+    switch (mode)
+    {
+      case On:
+      {
+        Button button = buttons[buttonIndex];
+        // Keyboard.press(buttons[buttonIndex].keys);
+        if (button.control)
+          Keyboard.press(KEY_LEFT_CTRL);
+        if (button.shift)
+          Keyboard.press(KEY_LEFT_SHIFT);
+        if (button.alt)
+          Keyboard.press(KEY_LEFT_ALT);
+        for (int index = 0; index < sizeof(Button().keys); index++ ){
+          Keyboard.press(button.keys[index]);
+          delay(10);
+          Keyboard.release(button.keys[index]);
+          delay(10);
+        }
+        // delay(100);
+        Keyboard.releaseAll();
+        break;
+      }
+
+      case Off:
+        Keyboard.releaseAll();
+        break;
+
+      case Pulse:
+        break;
     }
-    delay(100);
-    Keyboard.releaseAll();
   }
 }
 
@@ -501,6 +533,7 @@ void initWiFi() {
 
 void doEncoders() {
   int button;
+  bool switchState;
 
   for (uint8_t enc = 0; enc < sizeof(found_encoders); enc++) { 
     if (found_encoders[enc] == false) continue;
@@ -515,8 +548,9 @@ void doEncoders() {
       else
         button = enc * 3 + encoderOffset + 1;
       // send press for each step
-      for (int count = 0; count < abs(change); count++)
-        sendButton(button);
+      for (int count = 0; count < abs(change); count++) {
+        sendButton(button, Pulse);
+      }
 
       #if defined(DEBUG)
       Serial.print("Encoder #");
@@ -531,13 +565,18 @@ void doEncoders() {
       encoder_pixels[enc].show();
     }
 
-    if (! encoders[enc].digitalRead(SS_SWITCH)) {
+    if (ssSwitchState[enc] != (switchState = encoders[enc].digitalRead(SS_SWITCH))) {     // switch pressed or released
       #if defined(DEBUG)
       Serial.print("Encoder #");
       Serial.print(enc);
-      Serial.println(" pressed");
+      Serial.print(" value is: ");
+      Serial.println(switchState);
       #endif
-      sendButton(enc * 3 + encoderOffset + 2);    // pushbutton is base + 2
+      if (switchState)
+        sendButton(enc * 3 + encoderOffset + 2, Off);    // pushbutton is base + 2
+      else
+        sendButton(enc * 3 + encoderOffset + 2, On);
+      ssSwitchState[enc] = switchState;
     }
   }
 }
@@ -613,15 +652,42 @@ void setup() {
   initEncoders();
 }
 
+void CheckAllButtons(void) {
+  if (keypad.getKeys())
+  {
+    for (int i = 0; i < LIST_MAX; i++)
+    {
+      if ( keypad.key[i].stateChanged )
+      {
+        switch (keypad.key[i].kstate) {
+          case PRESSED:
+            sendButton(keypad.key[i].kchar - 1, On);      // change to zero based
+            break;
+          case RELEASED:
+            sendButton(keypad.key[i].kchar - 1, Off);
+            break;
+          // case HOLD:
+          // case IDLE:
+          //   break;
+        }
+      }
+    }
+  }
+}
+
 void loop() {
+  #if defined(TESTCODE)
   uint8_t key = keypad.getKey();
 
   if (key) {
     #if defined(DEBUG)
     Serial.println(key);
     #endif
-    sendButton(key - 1);    // buttons are zero based
+    sendButton(key - 1, true);    // buttons are zero based
   }
+  #else
+    CheckAllButtons();
+  #endif
 
   doEncoders();
   
