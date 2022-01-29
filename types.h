@@ -18,3 +18,9 @@ typedef struct Button {
   bool shift;
   bool alt;
 } Button;
+
+// multi-mode encoders?
+typedef struct encModal {
+  bool modal;
+  bool shifted;
+} encModal;

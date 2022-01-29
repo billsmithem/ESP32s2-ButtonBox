@@ -89,6 +89,17 @@ bool found_encoders[] = {false, false, false, false, false, false};
 
 bool ssSwitchState[] { true, true, true, true, true, true};
 
+encModal encoderMode[] = {
+  { true, false },
+  { true, false },
+  { true, false },
+  { true, false },
+  { true, false },
+  { true, false }
+};
+
+const int shiftSize = 18;
+
 // keypad
 const byte ROWS = 4;
 const byte COLS = 6;
@@ -170,6 +181,32 @@ Button buttons[] = {
   { 39, false, "", false, false, false },    // CCW
   { 40, false, "", false, false, false },    // CW
   { 41, false, "", false, false, false },    // push button
+
+  // shifted rotaries start here
+  // one
+  { 42, false, "", false, false, false },    // CCW
+  { 43, false, "", false, false, false },    // CW
+  { 44, false, "", false, false, false },    // push button
+  // two
+  { 45, false, "", false, false, false },    // CCW
+  { 46, false, "", false, false, false },    // CW
+  { 47, false, "", false, false, false },    // push button
+  // three
+  { 48, false, "", false, false, false },    // CCW
+  { 49, false, "", false, false, false },    // CW
+  { 50, false, "", false, false, false },    // push button
+  // four
+  { 51, false, "", false, false, false },    // CCW
+  { 52, false, "", false, false, false },    // CW
+  { 53, false, "", false, false, false },    // push button
+  // five
+  { 54, false, "", false, false, false },    // CCW
+  { 55, false, "", false, false, false },    // CW
+  { 56, false, "", false, false, false },    // push button
+  // six
+  { 57, false, "", false, false, false },    // CCW
+  { 58, false, "", false, false, false },    // CW
+  { 59, false, "", false, false, false },    // push button
 };
 
 
@@ -207,7 +244,7 @@ void sendButton(unsigned int buttonIndex, ButtonMode mode) {
 
       case Pulse:
         Gamepad.pressButton(buttons[buttonIndex].buttonVal);
-        delay(10);
+        delay(50);
         Gamepad.releaseButton(buttons[buttonIndex].buttonVal);
         break;
     }
@@ -547,6 +584,9 @@ void doEncoders() {
         button = enc * 3 + encoderOffset;
       else
         button = enc * 3 + encoderOffset + 1;
+
+      if (encoderMode[enc].shifted)
+        button += shiftSize;        // add offset for additional inputs shifted
       // send press for each step
       for (int count = 0; count < abs(change); count++) {
         sendButton(button, Pulse);
@@ -561,8 +601,8 @@ void doEncoders() {
       encoder_positions[enc] = new_position;
 
       // change the neopixel color, mulitply the new positiion by 4 to speed it up
-      encoder_pixels[enc].setPixelColor(0, Wheel((new_position*4) & 0xFF));
-      encoder_pixels[enc].show();
+      // encoder_pixels[enc].setPixelColor(0, Wheel((new_position*4) & 0xFF));
+      // encoder_pixels[enc].show();
     }
 
     if (ssSwitchState[enc] != (switchState = encoders[enc].digitalRead(SS_SWITCH))) {     // switch pressed or released
@@ -572,10 +612,21 @@ void doEncoders() {
       Serial.print(" value is: ");
       Serial.println(switchState);
       #endif
-      if (switchState)
-        sendButton(enc * 3 + encoderOffset + 2, Off);    // pushbutton is base + 2
-      else
-        sendButton(enc * 3 + encoderOffset + 2, On);
+      // modal && switch state is true
+      if (encoderMode[enc].modal && ssSwitchState[enc]) {
+        encoderMode[enc].shifted = !encoderMode[enc].shifted;
+        if (encoderMode[enc].shifted)
+          encoder_pixels[enc].setPixelColor(0, 100, 0, 0);
+        else
+          encoder_pixels[enc].setPixelColor(0, 0, 100, 0);
+        encoder_pixels[enc].show();
+
+      } else {              // if not modal, send button press/release
+        if (switchState)
+          sendButton(enc * 3 + encoderOffset, Off);    // pushbutton is base + 2
+        else
+          sendButton(enc * 3 + encoderOffset, On);
+      }
       ssSwitchState[enc] = switchState;
     }
   }
@@ -613,6 +664,8 @@ void initEncoders() {
       
       // set not so bright!
       encoder_pixels[enc].setBrightness(30);
+      if (encoderMode[enc].modal)
+        encoder_pixels[enc].setPixelColor(0, 0, 100, 0);
       encoder_pixels[enc].show();
 
       found_encoders[enc] = true;
