@@ -1,7 +1,23 @@
 #define DEBUG
+#define REMOTE
 // #define SLOWDOWN          // add delay so I can see button presses on jstest
 #if defined(SLOWDOWN)
 const int delayMillis = 500;
+#endif
+#if defined(DEBUG)
+  #if defined(REMOTE)
+    #define dprint(s) WebSerial.print(s)
+    #define dprintln(s) WebSerial.println(s)
+    #define dwrite(s) WebSerial.print(s)
+  #else
+    #define dprint(s) Serial.print(s)
+    #define dprintln(s) Serial.println(s)
+    #define dwrite(s) Serial.write(s)
+  #endif
+#else
+  #define dprint(s)
+  #define dprintln(s)
+  #define dwrite(s)
 #endif
 
 
@@ -9,6 +25,7 @@ const int delayMillis = 500;
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <WebSerial.h>
 #include "FS.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
@@ -35,6 +52,7 @@ const char* input_parameter1 = "output";
 const char* input_parameter2 = "state";
 
 AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 String ledState;
 
@@ -210,21 +228,22 @@ Button buttons[] = {
 };
 
 
-void sendButton(unsigned int buttonIndex, ButtonMode mode) {
+void sendButton(uint16_t buttonIndex, ButtonMode mode) {
   #if defined(DEBUG)
-  Serial.print("sendButton: ");
-  Serial.println(buttonIndex);
+  dprint("sendButton: ");
+  dprintln(buttonIndex);
+
   switch (mode) {
     case On:
-      Serial.println("Pressing button");
+      dprintln("Pressing button");
       break;
 
     case Off:
-      Serial.println("Releasing button");
+      dprintln("Releasing button");
       break;
 
     case Pulse:
-      Serial.println("Pulsing button");
+      dprintln("Pulsing button");
       break;
   }
   #endif
@@ -268,7 +287,6 @@ void sendButton(unsigned int buttonIndex, ButtonMode mode) {
           Keyboard.release(button.keys[index]);
           delay(10);
         }
-        // delay(100);
         Keyboard.releaseAll();
         break;
       }
@@ -423,6 +441,15 @@ void notFound(AsyncWebServerRequest *request) {
   request->send(404, "text/plain", "Not found");
 }
 
+void recvMsg(uint8_t *data, size_t len){
+  WebSerial.println("Received Data...");
+  String d = "";
+  for(int i = 0; i < len; i++){
+    d += char(data[i]);
+  }
+  WebSerial.println(d);
+}
+
 // init web server
 void initWebServer() {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -546,6 +573,19 @@ void initLittleFS() {
   }
 }
 
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  
+  if(type == WS_EVT_CONNECT){
+  
+    Serial.println("Websocket client connection received");
+     
+  } else if(type == WS_EVT_DISCONNECT){
+ 
+    Serial.println("Client disconnected");
+  
+  }
+}
+
 void initWiFi() {
   // configure static IP address
   if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
@@ -593,24 +633,20 @@ void doEncoders() {
       }
 
       #if defined(DEBUG)
-      Serial.print("Encoder #");
-      Serial.print(enc);
-      Serial.print(" -> ");
-      Serial.println(new_position);         // display new position
+      dprint("Encoder #");
+      dprint(enc);
+      dprint(" -> ");
+      dprintln(new_position);         // display new position
       #endif
       encoder_positions[enc] = new_position;
-
-      // change the neopixel color, mulitply the new positiion by 4 to speed it up
-      // encoder_pixels[enc].setPixelColor(0, Wheel((new_position*4) & 0xFF));
-      // encoder_pixels[enc].show();
     }
 
     if (ssSwitchState[enc] != (switchState = encoders[enc].digitalRead(SS_SWITCH))) {     // switch pressed or released
       #if defined(DEBUG)
-      Serial.print("Encoder #");
-      Serial.print(enc);
-      Serial.print(" value is: ");
-      Serial.println(switchState);
+      dprint("Encoder #");
+      dprint(enc);
+      dprint(" value is: ");
+      dprintln(switchState);
       #endif
       // modal && switch state is true
       if (encoderMode[enc].modal && ssSwitchState[enc]) {
@@ -637,19 +673,19 @@ void initEncoders() {
     // See if we can find encoders on this address 
     if (! encoders[enc].begin(SEESAW_BASE_ADDR + enc) ||
         ! encoder_pixels[enc].begin(SEESAW_BASE_ADDR + enc)) {
-      Serial.print("Couldn't find encoder #");
-      Serial.println(enc);
+      dprint("Couldn't find encoder #");
+      dprintln(enc);
     } else {
-      Serial.print("Found encoder + pixel #");
-      Serial.println(enc);
+      dprint("Found encoder + pixel #");
+      dprintln(enc);
       
       uint32_t version = ((encoders[enc].getVersion() >> 16) & 0xFFFF);
       if (version != 4991){
-        Serial.print("Wrong firmware loaded? ");
-        Serial.println(version);
+        dprint("Wrong firmware loaded? ");
+        dprintln(version);
         while(1) delay(10);
       }
-      Serial.println("Found Product 4991");
+      dprintln("Found Product 4991");
   
       // use a pin for the built in encoder switch
       encoders[enc].pinMode(SS_SWITCH, INPUT_PULLUP);
@@ -657,13 +693,13 @@ void initEncoders() {
       // get starting position
       encoder_positions[enc] = encoders[enc].getEncoderPosition();
   
-      Serial.println("Turning on interrupts");
+      dprintln("Turning on interrupts");
       delay(10);
       encoders[enc].setGPIOInterrupts((uint32_t)1 << SS_SWITCH, 1);
       encoders[enc].enableEncoderInterrupt();
       
       // set not so bright!
-      encoder_pixels[enc].setBrightness(30);
+      encoder_pixels[enc].setBrightness(20);
       if (encoderMode[enc].modal)
         encoder_pixels[enc].setPixelColor(0, 0, 100, 0);
       encoder_pixels[enc].show();
@@ -672,7 +708,7 @@ void initEncoders() {
     }
   }
  
-  Serial.println("Encoders started");
+  dprintln("Encoders started");
 }
 
 void setup() {
@@ -680,14 +716,20 @@ void setup() {
   delay(500); //let things init
   Serial.println("Booting...");
 
-  initLittleFS();
-
   initWiFi();
+
+  WebSerial.begin(&server);
+  WebSerial.msgCallback(recvMsg);
+
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
+  initWebServer();
+
+  initLittleFS();
 
   AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 
-  initWebServer();
-
+  // intention is to support multiple "layouts"
   getConfig();
   getLayout();
   putLayout("/first.layout");
@@ -699,7 +741,7 @@ void setup() {
   USB.begin();
 
   #if defined(DEBUG)
-  Serial.println("Looking for encoders");
+  dprintln("Looking for encoders");
   #endif
 
   initEncoders();
@@ -719,6 +761,8 @@ void CheckAllButtons(void) {
           case RELEASED:
             sendButton(keypad.key[i].kchar - 1, Off);
             break;
+          default:
+            break;
           // case HOLD:
           // case IDLE:
           //   break;
@@ -729,36 +773,11 @@ void CheckAllButtons(void) {
 }
 
 void loop() {
-  #if defined(TESTCODE)
-  uint8_t key = keypad.getKey();
-
-  if (key) {
-    #if defined(DEBUG)
-    Serial.println(key);
-    #endif
-    sendButton(key - 1, true);    // buttons are zero based
-  }
-  #else
-    CheckAllButtons();
-  #endif
+  CheckAllButtons();
 
   doEncoders();
   
   // don't overwhelm serial port
   yield();
   delay(10);
-}
-
-
-uint32_t Wheel(byte WheelPos) {
-  WheelPos = 255 - WheelPos;
-  if (WheelPos < 85) {
-    return seesaw_NeoPixel::Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  }
-  if (WheelPos < 170) {
-    WheelPos -= 85;
-    return seesaw_NeoPixel::Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
-  WheelPos -= 170;
-  return seesaw_NeoPixel::Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
