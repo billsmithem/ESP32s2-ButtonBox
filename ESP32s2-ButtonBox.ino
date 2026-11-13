@@ -5,15 +5,9 @@
 const int delayMillis = 500;
 #endif
 #if defined(DEBUG)
-  #if defined(REMOTE)
-    #define dprint(s) WebSerial.print(s)
-    #define dprintln(s) WebSerial.println(s)
-    #define dwrite(s) WebSerial.print(s)
-  #else
     #define dprint(s) Serial.print(s)
     #define dprintln(s) Serial.println(s)
     #define dwrite(s) Serial.write(s)
-  #endif
 #else
   #define dprint(s)
   #define dprintln(s)
@@ -24,12 +18,9 @@ const int delayMillis = 500;
 #include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <WebSerial.h>
 #include "FS.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-#include <AsyncElegantOTA.h>
 #include "USB.h"
 #include "myUSBHIDGamepad.h"
 #include "myUSBHIDKeyboard.h"
@@ -51,58 +42,7 @@ IPAddress secondaryDNS(1, 0, 0, 1);
 const char* input_parameter1 = "output";
 const char* input_parameter2 = "state";
 
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-
 bool ledState = false;
-
-// reset web page
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-  <head>
-    <title>Reset Butonbox</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      body { font-family: Arial; text-align: center; margin:0px auto; padding-top: 30px;}
-      .button {
-        padding: 10px 20px;
-        font-size: 24px;
-        text-align: center;
-        outline: none;
-        color: #fff;
-        background-color: #2f4468;
-        border: none;
-        border-radius: 5px;
-        box-shadow: 0 6px #999;
-        cursor: pointer;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        -khtml-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        -webkit-tap-highlight-color: rgba(0,0,0,0);
-      }  
-      .button:hover {background-color: #1f2e45}
-      .button:active {
-        background-color: #1f2e45;
-        box-shadow: 0 4px #666;
-        transform: translateY(2px);
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Reset Buttonx Box</h1>
-    <button class="button" onmousedown="toggleCheckbox('on');" ontouchstart="toggleCheckbox('on');" onmouseup="toggleCheckbox('off');" ontouchend="toggleCheckbox('off');">LED PUSHBUTTON</button>
-   <script>
-   function toggleCheckbox(x) {
-     var xhr = new XMLHttpRequest();
-     xhr.open("GET", "/" + x, true);
-     xhr.send();
-   }
-  </script>
-  </body>
-</html>)rawliteral";
 
 // rotary encoders
 #define SS_SWITCH        24      // this is the pin on the encoder connected to switch
@@ -452,67 +392,6 @@ void readFile(const char * path){
     file.close();
 }
 
-void notFound(AsyncWebServerRequest *request) {
-  request->send(404, "text/plain", "Not found");
-}
-
-// Webserial
-void recvMsg(uint8_t *data, size_t len) {
-  WebSerial.println("Received Data...");
-  String d = "";
-  for(int i = 0; i < len; i++){
-    d += char(data[i]);
-  }
-  WebSerial.println(d);
-  if (d == "reboot")
-    ESP.restart();
-  else if (d == "cmd")
-    WebSerial.println("Commands are: cmd, reboot, button(not yet)");
-  // else if (d == "button")
-  //   printButtons();
-}
-
-// init web server
-void initWebServer() {
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", index_html);
-  });
-
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "ok");
-    ESP.restart();
-  });
-  
-  server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/ws.html", "text/html");
-  });
-
-  // route for style.css
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/style.css", "text/css");
-  });
-
-  // Send a GET request to <ESP_IP>/update?output=<inputMessage1>&state=<inputMessage2>
-  // server.on("/update", HTTP_GET, [] (AsyncWebServerRequest *request) {
-  //   String inputMessage1;
-  //   String inputMessage2;
-  //   // GET input1 value on <ESP_IP>/update?output=<inputMessage1>&state=<inputMessage2>
-  //   if (request->hasParam(input_parameter1) && request->hasParam(input_parameter2)) {
-  //     inputMessage1 = request->getParam(input_parameter1)->value();
-  //     inputMessage2 = request->getParam(input_parameter2)->value();
-  //     // digitalWrite(inputMessage1.toInt(), inputMessage2.toInt());
-  //   }
-  //   else {
-  //     inputMessage1 = "No messge sent";
-  //     inputMessage2 = "No message sent";
-  //   }
-  //    request->send(200, "text/plain", "OK");
-  // });
-
-  server.begin();
-  Serial.println("HTTP server started");
-}
-
 // File operations
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
     Serial.printf("Listing directory: %s\r\n", dirname);
@@ -599,49 +478,6 @@ void initLittleFS() {
     listDir(LittleFS, "/", 0);
     #endif
   }
-}
-
-// WebSocket
-void notifyClients() {
-  ws.textAll(String(ledState));
-}
-
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-  AwsFrameInfo *info = (AwsFrameInfo*)arg;
-  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-    data[len] = 0;
-    if (strcmp((char*)data, "toggle") == 0) {
-      ledState = !ledState;
-
-      dprint("GPIO toggled, ledState = ");
-      dprintln(String(ledState));
-
-      notifyClients();
-    }
-  }
-}
-
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
-             void *arg, uint8_t *data, size_t len) {
-  switch (type) {
-    case WS_EVT_CONNECT:
-      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-      break;
-    case WS_EVT_DISCONNECT:
-      Serial.printf("WebSocket client #%u disconnected\n", client->id());
-      break;
-    case WS_EVT_DATA:
-      handleWebSocketMessage(arg, data, len);
-      break;
-    case WS_EVT_PONG:
-    case WS_EVT_ERROR:
-      break;
-  }
-}
-
-void initWebSocket() {
-  ws.onEvent(onEvent);
-  server.addHandler(&ws);
 }
 
 String processor(const String& var){
@@ -789,16 +625,7 @@ void setup() {
 
   initWiFi();
 
-  WebSerial.begin(&server);
-  WebSerial.msgCallback(recvMsg);
-
-  initWebSocket();
-
-  initWebServer();
-
   initLittleFS();
-
-  AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 
   // intention is to support multiple "layouts"
   getConfig();

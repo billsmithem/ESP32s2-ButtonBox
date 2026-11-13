@@ -1,0 +1,7 @@
+Overlay cutouts for switch panel
+
+Toggle: 9mm
+
+Push Button: 19mm
+
+Rotary: 17mm

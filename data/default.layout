@@ -1,0 +1,341 @@
+[
+  {
+    "buttonVal": "0",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "1",
+    "isKey": false,
+    "keys": "A",
+    "control": true,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "2",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": true,
+    "alt": false
+  },
+  {
+    "buttonVal": "3",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": true
+  },
+  {
+    "buttonVal": "4",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "5",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "6",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "7",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "8",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "9",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "10",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "11",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "12",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "13",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "14",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "15",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "16",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "17",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "18",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "19",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+
+  {
+    "buttonVal": "20",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "21",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "22",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "23",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "24",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "25",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "26",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "27",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "28",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "29",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+
+  {
+    "buttonVal": "30",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "31",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "32",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "33",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "34",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "35",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "36",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "37",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "38",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "39",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+
+  {
+    "buttonVal": "40",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  },
+  {
+    "buttonVal": "41",
+    "isKey": false,
+    "keys": "A",
+    "control": false,
+    "shift": false,
+    "alt": false
+  }
+]
